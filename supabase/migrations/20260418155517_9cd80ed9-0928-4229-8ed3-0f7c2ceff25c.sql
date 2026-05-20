@@ -1,0 +1,1 @@
+ALTER TABLE public.despesas ADD COLUMN forma_pagamento text NOT NULL DEFAULT 'boleto';
