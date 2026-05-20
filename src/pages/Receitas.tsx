@@ -4,7 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Plus, Pencil, Trash2, TrendingUp, CheckCircle2, AlertTriangle, History } from "lucide-react";
+import { Pencil, Trash2, TrendingUp, CheckCircle2, AlertTriangle, History } from "lucide-react";
 import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
@@ -12,6 +12,8 @@ import {
 import { toast } from "sonner";
 import ReceitaForm from "@/components/ReceitaForm";
 import HistoricoLancamento from "@/components/HistoricoLancamento";
+import FreemiumAddBtn from "@/components/FreemiumAddBtn";
+import { usePremium } from "@/hooks/usePremium";
 import { formatBRL } from "@/lib/format";
 import { findDuplicateIds } from "@/lib/duplicates";
 
@@ -24,13 +26,14 @@ const categoriaLabel: Record<string, string> = {
 };
 
 export default function Receitas() {
-  useEffect(() => { document.title = "Receitas | Vencix Condomínio"; }, []);
+  useEffect(() => { document.title = "Receitas | SíndicoMaster"; }, []);
 
   const qc = useQueryClient();
   const [open, setOpen] = useState(false);
   const [editing, setEditing] = useState<any | null>(null);
   const [deleteId, setDeleteId] = useState<string | null>(null);
   const [historico, setHistorico] = useState<any | null>(null);
+  const { isPremium } = usePremium();
 
   const { data: receitas = [], isLoading } = useQuery({
     queryKey: ["receitas"],
@@ -68,9 +71,12 @@ export default function Receitas() {
           <h2 className="text-2xl font-bold">Receitas</h2>
           <p className="text-sm text-muted-foreground">Entradas financeiras dos condomínios</p>
         </div>
-        <Button onClick={() => { setEditing(null); setOpen(true); }} className="bg-gradient-primary">
-          <Plus className="h-4 w-4 mr-1" /> Nova
-        </Button>
+        <FreemiumAddBtn
+          isPremium={isPremium}
+          count={receitas.length}
+          label="Nova"
+          onClick={() => { setEditing(null); setOpen(true); }}
+        />
       </div>
 
       <div className="grid grid-cols-3 gap-2">

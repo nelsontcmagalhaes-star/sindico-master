@@ -3,8 +3,10 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import { Plus, Pencil, Trash2, Building2, MapPin } from "lucide-react";
+import { Pencil, Trash2, Building2, MapPin } from "lucide-react";
 import CondominioForm from "@/components/CondominioForm";
+import FreemiumAddBtn from "@/components/FreemiumAddBtn";
+import { usePremium } from "@/hooks/usePremium";
 import { toast } from "sonner";
 import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
@@ -16,8 +18,9 @@ export default function Condominios() {
   const [open, setOpen] = useState(false);
   const [editing, setEditing] = useState<any | null>(null);
   const [deleteId, setDeleteId] = useState<string | null>(null);
+  const { isPremium } = usePremium();
 
-  useEffect(() => { document.title = "Condomínios | Vencix Condomínio"; }, []);
+  useEffect(() => { document.title = "Condomínios | SíndicoMaster"; }, []);
 
   const { data, isLoading } = useQuery({
     queryKey: ["condominios"],
@@ -43,9 +46,12 @@ export default function Condominios() {
     <div className="space-y-4">
       <div className="flex items-center justify-between">
         <h2 className="text-2xl font-bold">Condomínios</h2>
-        <Button onClick={() => { setEditing(null); setOpen(true); }} className="bg-gradient-primary">
-          <Plus className="h-4 w-4 mr-1" /> Novo
-        </Button>
+        <FreemiumAddBtn
+          isPremium={isPremium}
+          count={data?.length ?? 0}
+          label="Novo"
+          onClick={() => { setEditing(null); setOpen(true); }}
+        />
       </div>
 
       {isLoading ? (

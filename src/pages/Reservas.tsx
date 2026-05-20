@@ -4,9 +4,11 @@ import { supabase } from "@/integrations/supabase/client";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Plus, Pencil, Trash2, CalendarDays } from "lucide-react";
+import { Pencil, Trash2, CalendarDays } from "lucide-react";
 import { toast } from "sonner";
 import ReservaForm from "@/components/ReservaForm";
+import FreemiumAddBtn from "@/components/FreemiumAddBtn";
+import { usePremium } from "@/hooks/usePremium";
 import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
@@ -23,6 +25,7 @@ export default function Reservas() {
   const [open, setOpen] = useState(false);
   const [editing, setEditing] = useState<any | null>(null);
   const [deleteId, setDeleteId] = useState<string | null>(null);
+  const { isPremium } = usePremium();
 
   const { data = [], isLoading } = useQuery({
     queryKey: ["reservas"],
@@ -52,9 +55,12 @@ export default function Reservas() {
     <div className="space-y-4">
       <div className="flex items-center justify-between">
         <h2 className="text-2xl font-bold">Reservas</h2>
-        <Button onClick={() => { setEditing(null); setOpen(true); }} className="bg-gradient-primary">
-          <Plus className="h-4 w-4 mr-1" /> Nova
-        </Button>
+        <FreemiumAddBtn
+          isPremium={isPremium}
+          count={data.length}
+          label="Nova"
+          onClick={() => { setEditing(null); setOpen(true); }}
+        />
       </div>
 
       {isLoading ? (

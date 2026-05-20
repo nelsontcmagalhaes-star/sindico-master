@@ -5,10 +5,12 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Plus, Pencil, Trash2, CheckCircle2, Calendar as CalendarIcon, Wrench, NotebookPen } from "lucide-react";
+import { Pencil, Trash2, CheckCircle2, Calendar as CalendarIcon, Wrench, NotebookPen } from "lucide-react";
 import { toast } from "sonner";
 import AnotacaoForm from "@/components/AnotacaoForm";
 import ManutencaoForm from "@/components/ManutencaoForm";
+import FreemiumAddBtn from "@/components/FreemiumAddBtn";
+import { usePremium } from "@/hooks/usePremium";
 import { addPeriodicidade, PERIODICIDADE_LABEL, Periodicidade } from "@/lib/periodicidade";
 
 const fmtDate = (s?: string | null) => s ? new Date(s + "T00:00:00").toLocaleDateString("pt-BR") : "—";
@@ -21,6 +23,7 @@ export default function Notas() {
   const [openM, setOpenM] = useState(false);
   const [editA, setEditA] = useState<any>(null);
   const [editM, setEditM] = useState<any>(null);
+  const { isPremium } = usePremium();
 
   const { data: anotacoes = [] } = useQuery({
     queryKey: ["anotacoes"],
@@ -86,9 +89,13 @@ export default function Notas() {
         </TabsList>
 
         <TabsContent value="anotacoes" className="space-y-3 mt-4">
-          <Button className="w-full bg-gradient-primary" onClick={() => { setEditA(null); setOpenA(true); }}>
-            <Plus className="h-4 w-4 mr-1" /> Nova anotação
-          </Button>
+          <FreemiumAddBtn
+            isPremium={isPremium}
+            count={anotacoes.length}
+            label="Nova anotação"
+            className="w-full"
+            onClick={() => { setEditA(null); setOpenA(true); }}
+          />
           {anotacoes.length === 0 ? (
             <p className="text-center text-muted-foreground py-6 text-sm">Nenhuma anotação ainda.</p>
           ) : anotacoes.map((a: any) => (
@@ -115,9 +122,13 @@ export default function Notas() {
         </TabsContent>
 
         <TabsContent value="manutencoes" className="space-y-3 mt-4">
-          <Button className="w-full bg-gradient-primary" onClick={() => { setEditM(null); setOpenM(true); }}>
-            <Plus className="h-4 w-4 mr-1" /> Nova manutenção
-          </Button>
+          <FreemiumAddBtn
+            isPremium={isPremium}
+            count={manutencoes.length}
+            label="Nova manutenção"
+            className="w-full"
+            onClick={() => { setEditM(null); setOpenM(true); }}
+          />
           {manutencoes.length === 0 ? (
             <p className="text-center text-muted-foreground py-6 text-sm">Nenhuma manutenção cadastrada.</p>
           ) : manutencoes.map((m: any) => {

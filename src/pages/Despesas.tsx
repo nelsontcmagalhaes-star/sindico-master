@@ -5,10 +5,12 @@ import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
-import { Plus, Check, Trash2, Search, Pencil, AlertTriangle, History } from "lucide-react";
+import { Check, Trash2, Search, Pencil, AlertTriangle, History } from "lucide-react";
 import { formatBRL, formatDateBR, todayISO } from "@/lib/format";
 import DespesaForm from "@/components/DespesaForm";
 import HistoricoLancamento from "@/components/HistoricoLancamento";
+import FreemiumAddBtn from "@/components/FreemiumAddBtn";
+import { usePremium } from "@/hooks/usePremium";
 import { toast } from "sonner";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { findDuplicateIds } from "@/lib/duplicates";
@@ -34,6 +36,7 @@ export default function Despesas() {
   const qc = useQueryClient();
   const [open, setOpen] = useState(false);
   const [editing, setEditing] = useState<Despesa | null>(null);
+  const { isPremium } = usePremium();
   const [historico, setHistorico] = useState<Despesa | null>(null);
   const [filtro, setFiltro] = useState<"todas" | "avencer" | "pagas" | "vencidas">("todas");
   const [forma, setForma] = useState<"todas" | "boleto" | "pix" | "cartao">("todas");
@@ -136,9 +139,12 @@ export default function Despesas() {
     <div className="space-y-4">
       <div className="flex items-center justify-between gap-2">
         <h2 className="text-xl font-bold">Despesas</h2>
-        <Button onClick={() => { setEditing(null); setOpen(true); }} className="bg-gradient-primary">
-          <Plus className="h-4 w-4 mr-1" />Nova
-        </Button>
+        <FreemiumAddBtn
+          isPremium={isPremium}
+          count={data.length}
+          label="Nova"
+          onClick={() => { setEditing(null); setOpen(true); }}
+        />
       </div>
 
       <div className="relative">
