@@ -1,5 +1,5 @@
 import { Outlet, NavLink, useNavigate } from "react-router-dom";
-import { Building2, Home, Receipt, FileBarChart, LogOut, Building, TrendingUp, NotebookPen, Users, UserCircle, CalendarDays, ClipboardList } from "lucide-react";
+import { Building2, Home, Receipt, FileBarChart, LogOut, Building, TrendingUp, NotebookPen, Users, UserCircle, CalendarDays, ClipboardList, Droplets } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { Button } from "@/components/ui/button";
 
@@ -14,6 +14,7 @@ const tabs = [
   { to: "/moradores", label: "Unidades", icon: UserCircle },
   { to: "/reservas", label: "Reservas", icon: CalendarDays },
   { to: "/assembleias", label: "Assembleias", icon: ClipboardList },
+  { to: "/consumo", label: "Consumo", icon: Droplets },
 ];
 
 export default function AppLayout() {
@@ -46,21 +47,21 @@ export default function AppLayout() {
         <Outlet />
       </main>
 
-      <nav className="fixed bottom-0 inset-x-0 bg-card border-t border-border shadow-elev z-30">
-        <div className="max-w-3xl mx-auto grid grid-cols-10 overflow-x-auto">
+      <nav className="fixed bottom-0 inset-x-0 bg-card border-t border-border shadow-elev z-30 overflow-x-auto">
+        <div className="max-w-3xl mx-auto flex min-w-max px-1">
           {tabs.map((t) => (
             <NavLink
               key={t.to}
               to={t.to}
               end={t.to === "/"}
               className={({ isActive }) =>
-                `flex flex-col items-center gap-1 py-3 transition-colors ${
+                `flex flex-col items-center gap-1 py-3 px-3 min-w-[64px] transition-colors ${
                   isActive ? "text-primary" : "text-muted-foreground hover:text-foreground"
                 }`
               }
             >
               <t.icon className="h-5 w-5" />
-              <span className="text-[10px] font-medium leading-tight text-center">{t.label}</span>
+              <span className="text-[10px] font-medium leading-tight text-center whitespace-nowrap">{t.label}</span>
             </NavLink>
           ))}
         </div>

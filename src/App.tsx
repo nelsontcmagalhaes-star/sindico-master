@@ -16,6 +16,7 @@ import Funcionarios from "./pages/Funcionarios";
 import Moradores from "./pages/Moradores";
 import Reservas from "./pages/Reservas";
 import Assembleias from "./pages/Assembleias";
+import Consumo from "./pages/Consumo";
 import NotFound from "./pages/NotFound";
 import AppLayout from "./components/AppLayout";
 
@@ -49,6 +50,7 @@ const App = () => (
               <Route path="/moradores" element={<Moradores />} />
               <Route path="/reservas" element={<Reservas />} />
               <Route path="/assembleias" element={<Assembleias />} />
+              <Route path="/consumo" element={<Consumo />} />
             </Route>
             <Route path="*" element={<NotFound />} />
           </Routes>
