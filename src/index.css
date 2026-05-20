@@ -91,7 +91,8 @@
 }
 
 @layer utilities {
-  .bg-gradient-primary { background: linear-gradient(135deg, #8a9a5b 0%, #627339 100%); }
+  .bg-gradient-primary { background: #8a9a5b; }
+  .bg-gradient-primary:hover { background: #7a8a4e; }
   .bg-gradient-card { background: var(--gradient-card); }
   .bg-gradient-warn { background: linear-gradient(135deg, #d97706 0%, #b45309 100%); }
   .bg-gradient-success { background: linear-gradient(135deg, #16a34a 0%, #15803d 100%); }
