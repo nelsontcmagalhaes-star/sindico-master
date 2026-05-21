@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card } from "@/components/ui/card";
-import { Building2, Eye, EyeOff, CheckCircle2, ShieldCheck } from "lucide-react";
+import { Building2, Eye, EyeOff, ShieldCheck } from "lucide-react";
 import { toast } from "sonner";
 import OnboardingSlides from "@/components/OnboardingSlides";
 
@@ -23,7 +23,6 @@ export default function Auth() {
   const [loading, setLoading] = useState(false);
   const [lgpdAccepted, setLgpdAccepted] = useState(false);
   const [verifyCode, setVerifyCode] = useState("");
-  const [generatedCode, setGeneratedCode] = useState("");
   const [showOnboarding, setShowOnboarding] = useState(false);
 
   useEffect(() => {
@@ -51,8 +50,8 @@ export default function Auth() {
         setMode("login");
 
       } else if (mode === "verify") {
-        if (verifyCode !== generatedCode) {
-          toast.error("Código incorreto. Tente novamente.");
+        if (!verifyCode || verifyCode.length < 6) {
+          toast.error("Digite o código de 6 dígitos que chegou no seu e-mail.");
           setLoading(false);
           return;
         }
@@ -62,36 +61,72 @@ export default function Auth() {
           return;
         }
 
-        // Usar fetch direto para evitar problema de headers do supabase-js
         const supabaseUrl = String(import.meta.env.VITE_SUPABASE_URL ?? "").trim();
         const supabaseKey = String(import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY ?? "").trim();
 
-        const res = await fetch(`${supabaseUrl}/auth/v1/signup`, {
+        // 1. Verificar o OTP enviado por e-mail
+        const verifyRes = await fetch(`${supabaseUrl}/auth/v1/verify`, {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
             "apikey": supabaseKey,
             "Authorization": `Bearer ${supabaseKey}`,
           },
-          body: JSON.stringify({ email: email.trim(), password: pwd }),
+          body: JSON.stringify({ email: email.trim(), token: verifyCode.trim(), type: "email" }),
         });
 
-        const result = await res.json().catch(() => ({}));
-        if (!res.ok) {
-          const msg = result?.msg || result?.error_description || result?.message || "Erro ao criar conta";
+        const verifyData = await verifyRes.json().catch(() => ({}));
+        if (!verifyRes.ok) {
+          const msg = verifyData?.msg || verifyData?.error_description || verifyData?.message || "Código inválido ou expirado";
           throw new Error(msg);
         }
 
-        toast.success("Conta criada! Verifique seu e-mail para confirmar, depois faça login.");
+        const accessToken = verifyData?.access_token as string | undefined;
+
+        // 2. Definir a senha do usuário recém-criado
+        if (accessToken && pwd) {
+          await fetch(`${supabaseUrl}/auth/v1/user`, {
+            method: "PUT",
+            headers: {
+              "Content-Type": "application/json",
+              "apikey": supabaseKey,
+              "Authorization": `Bearer ${accessToken}`,
+            },
+            body: JSON.stringify({ password: pwd }),
+          }).catch(() => {});
+        }
+
+        toast.success("Conta criada com sucesso! Faça login com seu e-mail e senha.");
         setMode("login");
+        setPwd("");
+        setVerifyCode("");
 
       } else if (mode === "signup") {
         if (!pwd || pwd.length < 6) { toast.error("Senha deve ter ao menos 6 caracteres."); setLoading(false); return; }
         if (pwd !== confirmPwd) { toast.error("As senhas não coincidem."); setLoading(false); return; }
         if (!lgpdAccepted) { toast.error("Aceite a LGPD para continuar."); setLoading(false); return; }
-        const code = String(Math.floor(1000 + Math.random() * 9000));
-        setGeneratedCode(code);
-        toast.info(`Seu código de verificação é: ${code}`, { duration: 30000 });
+
+        // Enviar código OTP real para o e-mail do usuário
+        const supabaseUrl = String(import.meta.env.VITE_SUPABASE_URL ?? "").trim();
+        const supabaseKey = String(import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY ?? "").trim();
+
+        const otpRes = await fetch(`${supabaseUrl}/auth/v1/otp`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "apikey": supabaseKey,
+            "Authorization": `Bearer ${supabaseKey}`,
+          },
+          body: JSON.stringify({ email: email.trim(), create_user: true }),
+        });
+
+        if (!otpRes.ok) {
+          const otpData = await otpRes.json().catch(() => ({}));
+          const msg = otpData?.msg || otpData?.error_description || otpData?.message || "Erro ao enviar código";
+          throw new Error(msg);
+        }
+
+        toast.success("Código de 6 dígitos enviado para o seu e-mail! Verifique também o spam.");
         setMode("verify");
 
       } else {
@@ -172,14 +207,16 @@ export default function Auth() {
             <>
               <div className="bg-primary/10 border border-primary/20 rounded-lg p-4 text-sm text-center">
                 <ShieldCheck className="h-8 w-8 text-primary mx-auto mb-2" />
-                <p className="font-semibold">Código de verificação</p>
-                <p className="text-3xl font-bold tracking-[0.3em] text-primary mt-2">{generatedCode}</p>
-                <p className="text-muted-foreground text-xs mt-2">Digite o código acima no campo abaixo</p>
+                <p className="font-semibold">Verifique seu e-mail</p>
+                <p className="text-muted-foreground text-xs mt-2">
+                  Enviamos um código de <strong>6 dígitos</strong> para <strong>{email}</strong>.
+                  Verifique também a pasta de spam.
+                </p>
               </div>
               <div>
-                <Label>Código de 4 dígitos</Label>
+                <Label>Código de 6 dígitos</Label>
                 <Input value={verifyCode} onChange={e => setVerifyCode(e.target.value)}
-                  className="text-center text-2xl tracking-[0.5em] font-mono" maxLength={4} placeholder="0000" />
+                  className="text-center text-2xl tracking-[0.5em] font-mono" maxLength={6} placeholder="000000" />
               </div>
               <label className="flex items-start gap-2 cursor-pointer bg-muted/50 p-3 rounded-lg border border-border text-xs">
                 <input type="checkbox" checked={lgpdAccepted} onChange={e => setLgpdAccepted(e.target.checked)} className="mt-0.5 rounded" />
@@ -191,7 +228,7 @@ export default function Auth() {
           <Button type="submit" disabled={loading} className="w-full bg-gradient-primary py-5 text-base">
             {loading ? "Aguarde..." :
               mode === "login" ? "Entrar" :
-              mode === "signup" ? "Enviar código de verificação" :
+              mode === "signup" ? "Enviar código por e-mail" :
               mode === "verify" ? "Confirmar e criar conta" :
               "Enviar link de recuperação"}
           </Button>
