@@ -61,17 +61,28 @@ export default function Auth() {
           setLoading(false);
           return;
         }
-        // Limpar sessão anterior para evitar conflito de headers
-        Object.keys(localStorage)
-          .filter((k) => k.startsWith("sb-"))
-          .forEach((k) => localStorage.removeItem(k));
 
-        const { error } = await supabase.auth.signUp({
-          email,
-          password: pwd,
+        // Usar fetch direto para evitar problema de headers do supabase-js
+        const supabaseUrl = String(import.meta.env.VITE_SUPABASE_URL ?? "").trim();
+        const supabaseKey = String(import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY ?? "").trim();
+
+        const res = await fetch(`${supabaseUrl}/auth/v1/signup`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "apikey": supabaseKey,
+            "Authorization": `Bearer ${supabaseKey}`,
+          },
+          body: JSON.stringify({ email: email.trim(), password: pwd }),
         });
-        if (error) throw error;
-        toast.success("Conta criada com sucesso! Faça login para continuar.");
+
+        const result = await res.json().catch(() => ({}));
+        if (!res.ok) {
+          const msg = result?.msg || result?.error_description || result?.message || "Erro ao criar conta";
+          throw new Error(msg);
+        }
+
+        toast.success("Conta criada! Verifique seu e-mail para confirmar, depois faça login.");
         setMode("login");
 
       } else if (mode === "signup") {
