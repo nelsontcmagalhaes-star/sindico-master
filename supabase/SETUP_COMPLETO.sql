@@ -100,9 +100,11 @@ CREATE TRIGGER trg_despesas_updated BEFORE UPDATE ON public.despesas
   FOR EACH ROW EXECUTE FUNCTION public.update_updated_at_column();
 
 -- ─── 5. RECEITAS ──────────────────────────────────────────
-CREATE TYPE IF NOT EXISTS public.receita_categoria AS ENUM (
-  'taxa_condominial', 'taxa_extra', 'multa', 'aluguel_area_comum', 'outros'
-);
+DO $$ BEGIN
+  CREATE TYPE public.receita_categoria AS ENUM (
+    'taxa_condominial', 'taxa_extra', 'multa', 'aluguel_area_comum', 'outros'
+  );
+EXCEPTION WHEN duplicate_object THEN NULL; END $$;
 CREATE TABLE IF NOT EXISTS public.receitas (
   id UUID NOT NULL DEFAULT gen_random_uuid() PRIMARY KEY,
   user_id UUID NOT NULL,
@@ -131,9 +133,11 @@ CREATE INDEX IF NOT EXISTS idx_receitas_user_id ON public.receitas(user_id);
 CREATE INDEX IF NOT EXISTS idx_receitas_condominio_id ON public.receitas(condominio_id);
 
 -- ─── 6. MANUTENÇÕES ───────────────────────────────────────
-CREATE TYPE IF NOT EXISTS public.manutencao_periodicidade AS ENUM (
-  'mensal','bimestral','trimestral','semestral','anual','unica'
-);
+DO $$ BEGIN
+  CREATE TYPE public.manutencao_periodicidade AS ENUM (
+    'mensal','bimestral','trimestral','semestral','anual','unica'
+  );
+EXCEPTION WHEN duplicate_object THEN NULL; END $$;
 CREATE TABLE IF NOT EXISTS public.manutencoes (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   user_id UUID NOT NULL,
