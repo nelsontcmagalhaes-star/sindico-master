@@ -91,7 +91,7 @@ export default function Auth() {
         if (!lgpdAccepted) { toast.error("Aceite a LGPD para continuar."); setLoading(false); return; }
         const code = String(Math.floor(1000 + Math.random() * 9000));
         setGeneratedCode(code);
-        toast.info(`Código de verificação enviado! [Simulação: ${code}]`, { duration: 12000 });
+        toast.info(`Seu código de verificação é: ${code}`, { duration: 30000 });
         setMode("verify");
 
       } else {
@@ -172,9 +172,9 @@ export default function Auth() {
             <>
               <div className="bg-primary/10 border border-primary/20 rounded-lg p-4 text-sm text-center">
                 <ShieldCheck className="h-8 w-8 text-primary mx-auto mb-2" />
-                <p className="font-semibold">Código enviado para</p>
-                <p className="text-primary font-bold">{email}</p>
-                <p className="text-muted-foreground text-xs mt-1">Verifique sua caixa de entrada</p>
+                <p className="font-semibold">Código de verificação</p>
+                <p className="text-3xl font-bold tracking-[0.3em] text-primary mt-2">{generatedCode}</p>
+                <p className="text-muted-foreground text-xs mt-2">Digite o código acima no campo abaixo</p>
               </div>
               <div>
                 <Label>Código de 4 dígitos</Label>
