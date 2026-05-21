@@ -61,13 +61,17 @@ export default function Auth() {
           setLoading(false);
           return;
         }
+        // Limpar sessão anterior para evitar conflito de headers
+        Object.keys(localStorage)
+          .filter((k) => k.startsWith("sb-"))
+          .forEach((k) => localStorage.removeItem(k));
+
         const { error } = await supabase.auth.signUp({
           email,
           password: pwd,
-          options: { emailRedirectTo: `${window.location.origin}/` },
         });
         if (error) throw error;
-        toast.success("Conta criada! Verifique seu e-mail para confirmar.");
+        toast.success("Conta criada com sucesso! Faça login para continuar.");
         setMode("login");
 
       } else if (mode === "signup") {
