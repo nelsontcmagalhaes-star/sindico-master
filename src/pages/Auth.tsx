@@ -27,9 +27,43 @@ export default function Auth() {
 
   useEffect(() => {
     document.title = "Entrar - SíndicoMaster";
-    if (user) nav("/", { replace: true });
     const seen = localStorage.getItem("sindico_onboarding_seen");
     if (!seen) setShowOnboarding(true);
+
+    if (user) {
+      // Usuário chegou via magic link do e-mail — definir senha se houver pendência
+      const pendingPwd = sessionStorage.getItem("sindico_pending_pwd");
+      const pendingEmail = sessionStorage.getItem("sindico_pending_email");
+      if (pendingPwd && pendingEmail) {
+        const supabaseUrl = String(import.meta.env.VITE_SUPABASE_URL ?? "").trim();
+        const supabaseKey = String(import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY ?? "").trim();
+        supabase.auth.getSession().then(({ data: { session } }) => {
+          const token = session?.access_token;
+          if (token) {
+            fetch(`${supabaseUrl}/auth/v1/user`, {
+              method: "PUT",
+              headers: {
+                "Content-Type": "application/json",
+                "apikey": supabaseKey,
+                "Authorization": `Bearer ${token}`,
+              },
+              body: JSON.stringify({ password: pendingPwd }),
+            }).finally(() => {
+              sessionStorage.removeItem("sindico_pending_pwd");
+              sessionStorage.removeItem("sindico_pending_email");
+              toast.success("Conta criada com sucesso! Bem-vindo ao SíndicoMaster!");
+              nav("/", { replace: true });
+            });
+          } else {
+            sessionStorage.removeItem("sindico_pending_pwd");
+            sessionStorage.removeItem("sindico_pending_email");
+            nav("/", { replace: true });
+          }
+        });
+      } else {
+        nav("/", { replace: true });
+      }
+    }
   }, [user, nav]);
 
   const handleOnboardingFinish = () => {
@@ -50,61 +84,39 @@ export default function Auth() {
         setMode("login");
 
       } else if (mode === "verify") {
-        if (!verifyCode || verifyCode.length < 6) {
-          toast.error("Digite o código de 6 dígitos que chegou no seu e-mail.");
-          setLoading(false);
-          return;
-        }
-        if (!lgpdAccepted) {
-          toast.error("Você precisa aceitar a LGPD para continuar.");
-          setLoading(false);
-          return;
-        }
-
+        // Reenviar o link de verificação para o e-mail
         const supabaseUrl = String(import.meta.env.VITE_SUPABASE_URL ?? "").trim();
         const supabaseKey = String(import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY ?? "").trim();
+        const pendingEmail = sessionStorage.getItem("sindico_pending_email") || email;
 
-        // 1. Verificar o OTP enviado por e-mail
-        const verifyRes = await fetch(`${supabaseUrl}/auth/v1/verify`, {
+        const otpRes = await fetch(`${supabaseUrl}/auth/v1/otp`, {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
             "apikey": supabaseKey,
             "Authorization": `Bearer ${supabaseKey}`,
           },
-          body: JSON.stringify({ email: email.trim(), token: verifyCode.trim(), type: "email" }),
+          body: JSON.stringify({
+            email: pendingEmail.trim(),
+            create_user: true,
+            redirect_to: "https://sindico-master.vercel.app",
+          }),
         });
 
-        const verifyData = await verifyRes.json().catch(() => ({}));
-        if (!verifyRes.ok) {
-          const msg = verifyData?.msg || verifyData?.error_description || verifyData?.message || "Código inválido ou expirado";
-          throw new Error(msg);
+        if (!otpRes.ok) {
+          const d = await otpRes.json().catch(() => ({}));
+          throw new Error(d?.msg || d?.error_description || d?.message || "Erro ao reenviar");
         }
-
-        const accessToken = verifyData?.access_token as string | undefined;
-
-        // 2. Definir a senha do usuário recém-criado
-        if (accessToken && pwd) {
-          await fetch(`${supabaseUrl}/auth/v1/user`, {
-            method: "PUT",
-            headers: {
-              "Content-Type": "application/json",
-              "apikey": supabaseKey,
-              "Authorization": `Bearer ${accessToken}`,
-            },
-            body: JSON.stringify({ password: pwd }),
-          }).catch(() => {});
-        }
-
-        toast.success("Conta criada com sucesso! Faça login com seu e-mail e senha.");
-        setMode("login");
-        setPwd("");
-        setVerifyCode("");
+        toast.success("E-mail reenviado! Verifique sua caixa de entrada.");
 
       } else if (mode === "signup") {
         if (!pwd || pwd.length < 6) { toast.error("Senha deve ter ao menos 6 caracteres."); setLoading(false); return; }
         if (pwd !== confirmPwd) { toast.error("As senhas não coincidem."); setLoading(false); return; }
         if (!lgpdAccepted) { toast.error("Aceite a LGPD para continuar."); setLoading(false); return; }
+
+        // Salvar senha temporariamente para usar após o clique no link do e-mail
+        sessionStorage.setItem("sindico_pending_pwd", pwd);
+        sessionStorage.setItem("sindico_pending_email", email.trim());
 
         // Enviar código OTP real para o e-mail do usuário
         const supabaseUrl = String(import.meta.env.VITE_SUPABASE_URL ?? "").trim();
@@ -117,16 +129,22 @@ export default function Auth() {
             "apikey": supabaseKey,
             "Authorization": `Bearer ${supabaseKey}`,
           },
-          body: JSON.stringify({ email: email.trim(), create_user: true }),
+          body: JSON.stringify({
+            email: email.trim(),
+            create_user: true,
+            redirect_to: "https://sindico-master.vercel.app",
+          }),
         });
 
         if (!otpRes.ok) {
           const otpData = await otpRes.json().catch(() => ({}));
           const msg = otpData?.msg || otpData?.error_description || otpData?.message || "Erro ao enviar código";
+          sessionStorage.removeItem("sindico_pending_pwd");
+          sessionStorage.removeItem("sindico_pending_email");
           throw new Error(msg);
         }
 
-        toast.success("Código de 6 dígitos enviado para o seu e-mail! Verifique também o spam.");
+        toast.success("E-mail enviado! Clique no link 'Sign in' que chegou na sua caixa de entrada.");
         setMode("verify");
 
       } else {
@@ -205,23 +223,17 @@ export default function Auth() {
 
           {mode === "verify" && (
             <>
-              <div className="bg-primary/10 border border-primary/20 rounded-lg p-4 text-sm text-center">
+              <div className="bg-primary/10 border border-primary/20 rounded-lg p-4 text-sm text-center space-y-2">
                 <ShieldCheck className="h-8 w-8 text-primary mx-auto mb-2" />
                 <p className="font-semibold">Verifique seu e-mail</p>
-                <p className="text-muted-foreground text-xs mt-2">
-                  Enviamos um código de <strong>6 dígitos</strong> para <strong>{email}</strong>.
-                  Verifique também a pasta de spam.
+                <p className="text-muted-foreground text-xs">
+                  Enviamos um e-mail para <strong>{email}</strong>.
                 </p>
+                <p className="text-xs font-medium text-primary">
+                  Clique no botão <strong>"Sign in"</strong> dentro do e-mail para confirmar e entrar no app automaticamente.
+                </p>
+                <p className="text-muted-foreground text-xs">Verifique também a pasta de spam.</p>
               </div>
-              <div>
-                <Label>Código de 6 dígitos</Label>
-                <Input value={verifyCode} onChange={e => setVerifyCode(e.target.value)}
-                  className="text-center text-2xl tracking-[0.5em] font-mono" maxLength={6} placeholder="000000" />
-              </div>
-              <label className="flex items-start gap-2 cursor-pointer bg-muted/50 p-3 rounded-lg border border-border text-xs">
-                <input type="checkbox" checked={lgpdAccepted} onChange={e => setLgpdAccepted(e.target.checked)} className="mt-0.5 rounded" />
-                <span>Confirmo que li e aceito a <strong>LGPD</strong> — Lei Geral de Proteção de Dados.</span>
-              </label>
             </>
           )}
 
@@ -229,7 +241,7 @@ export default function Auth() {
             {loading ? "Aguarde..." :
               mode === "login" ? "Entrar" :
               mode === "signup" ? "Enviar código por e-mail" :
-              mode === "verify" ? "Confirmar e criar conta" :
+              mode === "verify" ? "Reenviar e-mail" :
               "Enviar link de recuperação"}
           </Button>
         </form>
