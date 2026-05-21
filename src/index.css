@@ -94,8 +94,10 @@
   .bg-gradient-primary { background: #8a9a5b; }
   .bg-gradient-primary:hover { background: #7a8a4e; }
   .bg-gradient-card { background: var(--gradient-card); }
-  .bg-gradient-warn { background: linear-gradient(135deg, #d97706 0%, #b45309 100%); }
-  .bg-gradient-success { background: linear-gradient(135deg, #16a34a 0%, #15803d 100%); }
+  .bg-gradient-warn { background: #8a9a5b; }
+  .bg-gradient-warn:hover { background: #7a8a4e; }
+  .bg-gradient-success { background: #627339; }
+  .bg-gradient-success:hover { background: #55632f; }
   .shadow-card { box-shadow: var(--shadow-card); }
   .shadow-elev { box-shadow: var(--shadow-elev); }
 }
